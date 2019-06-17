@@ -1,0 +1,98 @@
+#!/bin/sh
+
+# Copyright (c) 2019 paulsnar <paulsnar@paulsnar.lv>
+#
+# Permission to use, copy, modify, and/or distribute this software for any
+# purpose with or without fee is hereby granted.
+#
+# THE SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES WITH
+# REGARD TO THIS SOFTWARE INCLUDING ALL IMPLIED WARRANTIES OF MERCHANTABILITY
+# AND FITNESS. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR ANY SPECIAL, DIRECT,
+# INDIRECT, OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES WHATSOEVER RESULTING FROM
+# LOSS OF USE, DATA OR PROFITS, WHETHER IN AN ACTION OF CONTRACT, NEGLIGENCE OR
+# OTHER TORTIOUS ACTION, ARISING OUT OF OR IN CONNECTION WITH THE USE OR
+# PERFORMANCE OF THIS SOFTWARE.
+
+_self="$0"
+
+_print_help() {
+  echo "Usage: $_self [--manual] domain.com"
+  echo
+  echo "Provisions a domain by:"
+  echo " * creating the directory structure in /var/www/sites"
+  echo " * instantiating nginx config from template"
+  echo " * symlinking the config to activate it"
+  echo
+  echo "Unless --manual is passed, the following steps are also performed:"
+  echo " * requesting a new SSL certificate from Let's Encrypt"
+  echo
+  echo "Note that nginx may be reloaded at certain times."
+}
+
+_create_directories() {
+  local domain="$1"
+  echo -n " 1) Instantiating directory structure..."
+  local prev_umask=$(umask)
+  umask 002
+  mkdir -p "/var/www/sites/$domain/public"
+  chown -R http:http "/var/www/sites/$domain"
+  umask $prev_umask
+  echo "done."
+}
+
+_create_nginx_config() {
+  local domain="$1"
+  echo -n " 2) Setting up nginx vhost configuration..."
+  sed -e "s/__DOMAIN__/$domain/g" /etc/nginx/sites-available/_template \
+    > "/etc/nginx/sites-available/$domain.conf"
+  ln -s \
+    "../sites-available/$domain.conf" \
+    "/etc/nginx/sites-enabled/$domain.conf"
+  systemctl reload nginx
+  echo "done."
+}
+
+_enable_dehydrated() {
+  local domain="$1"
+  echo " 3) Setting up SSL via dehydrated..."
+  echo "$domain" >> /etc/dehydrated/domains.txt
+  dehydrated -c --domain "$domain"
+  local tmp=$(mktemp)
+  sed -E \
+      -e 's/^( +)#return/\1return/g' \
+      -e 's/^( +)#ssl/\1ssl/g' \
+      -e 's/^( +)#include/\1include/g' \
+      -e 6,8d \
+      "/etc/nginx/sites-available/$domain.conf" > "$tmp"
+  mv "$tmp" "/etc/nginx/sites-available/$domain.conf"
+  systemctl reload nginx
+}
+
+_main() {
+  if [ "$1" == "-h" -o "$1" == "--help" ]; then
+    _print_help
+    return 0
+  elif [ "$1" == "" ]; then
+    _print_help
+    return 1
+  fi
+
+  local is_manual="false"
+  if [ "$1" == "--manual" ]; then
+    is_manual="true"
+    shift
+  fi
+
+  local domain="$1"
+
+  _create_directories "$domain"
+  _create_nginx_config "$domain"
+  $is_manual || _enable_dehydrated "$domain"
+
+  echo
+  echo "Finished. Have a nice day!"
+  return 0
+}
+
+_main $@
+exit $?

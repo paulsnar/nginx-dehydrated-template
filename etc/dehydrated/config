@@ -1,0 +1,6 @@
+# For full config options, see github:lukas2511/dehydrated:docs/examples/config
+# Here we change only the significant options
+
+CHALLENGETYPE="http-01"
+WELLKNOWN="/var/www/dehydrated"
+CONTACT_EMAIL="__YOUR_EMAIL_HERE__"
