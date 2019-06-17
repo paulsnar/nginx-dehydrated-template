@@ -15,6 +15,8 @@ In some files there are placeholders to be replaced, notably:
 * `/etc/nginx/nginx.conf` and `/etc/nginx/sites-available/_template`:
   replace `__SERVER_IP__` (and, optionally, `__SERVER_IP6__`) with your server's
   public or NAT IPv4 (and IPv6, respectively) addresses.
+  (Within `/etc/nginx/sites-available/_template`, the `__DOMAIN__` placeholder
+  should remain -- it's used by the `provision-domain` script.)
 
 Within `/etc/nginx/nginx.conf` within comments there are some notes with regards
 to files that have to be created or generated for a particular instance.
@@ -42,10 +44,11 @@ to be in certain places. Notably:
   `example.com` would be within `/var/www/sites/example.com/public`.
 
 Also provided is a script which automates setting up a new site:
-<usr/sbin/provision-domain>. It's written with this particular template in mind
-and expects to be run within a POSIX-compliant shell. (Note that, depending on
-your system, the `http` user and/or group on line 38 might have to be changed.
-(For Debian/Ubuntu, this needs to be `www-data`, if I recall correctly.)
+[provision-domain](./usr/sbin/provision-domain). It's written with this
+particular template in mind and expects to be run within a POSIX-compliant
+environment. (Note that, depending on your system, the `http` user and/or
+group on line 38 might have to be changed. For Debian/Ubuntu, this needs to
+be `www-data`, if I recall correctly.)
 
 ## Further questions?
 
