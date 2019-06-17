@@ -1,8 +1,12 @@
 # Nginx/Dehydrated config template
 
-This has been extracted from my own servers. It supports best practices with regards
-to security while also being quite flexible and (in my opinion) understandable and
-organized.
+This repo provides a sample configuration template for [nginx][] together with
+[dehydrated][]. It's been extracted from my own servers. This template supports
+best practices regarding security while also being quite flexible and
+(in my opinion) understandable and organized.
+
+[nginx]: https://nginx.org/
+[dehydrated]: https://github.com/lukas2511/dehydrated
 
 ## Usage
 
